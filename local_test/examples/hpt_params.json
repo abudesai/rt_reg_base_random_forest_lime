@@ -1,0 +1,23 @@
+[
+  {
+    "name": "l1_ratio",
+    "short_desc": "L1/L2 regularization penalty.",   
+    "default": 1e-3,
+    "type": "real",
+    "range_low": 1e-9,
+    "range_high": 1e-1,
+    "search_type": "log-uniform",
+    "run_HPO": true
+  },
+
+  {
+    "name":"alpha", 
+    "short_desc":"Multiplies L1/L2 parameter penalty.",
+    "default": 0.5,
+    "type": "real",
+    "range_low": 0.000001,
+    "range_high": 0.999,
+    "search_type": "uniform",
+    "run_HPO": true
+  }
+]
