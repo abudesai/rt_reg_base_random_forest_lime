@@ -2,7 +2,7 @@ import os, shutil
 import sys
 import time
 import pandas as pd, numpy as np
-import pprint 
+import pprint
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 
 sys.path.insert(0, './../app')
@@ -34,6 +34,10 @@ test_results_path = "test_results"
 if not os.path.exists(test_results_path): os.mkdir(test_results_path)
 
 
+# change this to whereever you placed your local testing datasets
+local_datapath = "./../../datasets" 
+
+
 '''
 this script is useful for doing the algorithm testing locally without needing
 to build the docker image and run the container.
@@ -42,8 +46,8 @@ from requirements.txt file, and then use that virtual env to do your testing.
 This isnt foolproof. You can still have host os or python version-related issues, so beware.
 '''
 
-
 model_name= regressor.MODEL_NAME
+
 
 def create_ml_vol():
     dir_tree = {
@@ -79,15 +83,16 @@ def create_ml_vol():
                 create_dir(dir_path, dir_dict[k])
     create_dir("", dir_tree)
 
-def copy_example_files(dataset_name):
+def copy_example_files(dataset_name):     
     # data schema
-    shutil.copyfile(f"./examples/{dataset_name}_schema.json", os.path.join(data_schema_path, f"{dataset_name}_schema.json"))
-    # train data
-    shutil.copyfile(f"./examples/{dataset_name}_train.csv", os.path.join(train_data_path, f"{dataset_name}_train.csv"))
-    # test data
-    shutil.copyfile(f"./examples/{dataset_name}_test.csv", os.path.join(test_data_path, f"{dataset_name}_test.csv"))
+    shutil.copyfile(f"{local_datapath}/{dataset_name}/{dataset_name}_schema.json", os.path.join(data_schema_path, f"{dataset_name}_schema.json"))
+    # train data    
+    shutil.copyfile(f"{local_datapath}/{dataset_name}/{dataset_name}_train.csv", os.path.join(train_data_path, f"{dataset_name}_train.csv"))    
+    # test data     
+    shutil.copyfile(f"{local_datapath}/{dataset_name}/{dataset_name}_test.csv", os.path.join(test_data_path, f"{dataset_name}_test.csv"))    
     # hyperparameters
     shutil.copyfile("./examples/hyperparameters.json", os.path.join(hyper_param_path, "hyperparameters.json"))
+
 
 def run_HPT(num_hpt_trials):
     # Read data
@@ -117,6 +122,8 @@ def load_and_test_algo():
     test_data = utils.get_data(test_data_path)
     # read data config
     data_schema = utils.get_data_schema(data_schema_path)
+    # set id and target fields for scoring
+    set_id_and_target_cols(data_schema)
     # instantiate the trained model
     predictor = model_server.ModelServer(model_artifacts_path, data_schema)
     # make predictions
@@ -125,31 +132,13 @@ def load_and_test_algo():
     predictions.to_csv(os.path.join(testing_outputs_path, "test_predictions.csv"), index=False)
     # score the results
     results = score(test_data, predictions)  
-    # local explanations
-    if hasattr(predictor, "has_local_explanations"): 
-        # will only return explanations for max 5 rows - will select the top 5 if given more rows
-        local_explanations = predictor.explain_local(test_data)
-    else: 
-        local_explanations = None
     print("done with predictions")
-    return results, local_explanations
+    return results
 
-
-def set_id_and_target_cols(dataset_name):
+def set_id_and_target_cols(data_schema):
     global id_col, target_col 
-    if dataset_name == "abalone": 
-        id_col = "Id"; target_col = "Rings"
-    elif dataset_name == "auto_prices": 
-        id_col = "id"; target_col = "price"
-    elif dataset_name == "computer_activity": 
-        id_col = "id"; target_col = "usr"
-    elif dataset_name == "heart_disease": 
-        id_col = "Id"; target_col = "num"
-    elif dataset_name == "white_wine": 
-        id_col = "id"; target_col = "quality"
-    elif dataset_name == "ailerons": 
-        id_col = "id"; target_col = "goal"
-    else: raise Exception(f"Error: Cannot find dataset = {dataset_name}")
+    id_col = data_schema["inputDatasets"]["regressionBaseMainInput"]["idField"]       
+    target_col = data_schema["inputDatasets"]["regressionBaseMainInput"]["targetField"] 
 
 def score(test_data, predictions):
     predictions = predictions.merge(test_data[[id_col, target_col]], on=id_col)
@@ -157,7 +146,6 @@ def score(test_data, predictions):
     mae = mean_absolute_error(predictions[target_col], predictions['prediction'])
     q3, q1 = np.percentile(predictions[target_col], [75, 25])
     iqr = q3 - q1
-    # print(iqr, predictions[target_col].min(), predictions[target_col].max(), predictions[target_col].mean())
     nmae = mae / iqr
     r2 = r2_score(predictions[target_col], predictions['prediction'])
     results = {
@@ -165,28 +153,18 @@ def score(test_data, predictions):
         "mae": np.round(mae,4),
         "nmae": np.round(nmae,4),
         "r2": np.round(r2,4),
+        "perc_pred_missing": np.round( 100 * (1 - predictions.shape[0] / test_data.shape[0]), 2)
         }
     return results
-
-
 
 def save_test_outputs(results, run_hpt, dataset_name):    
     df = pd.DataFrame(results) if dataset_name is None else pd.DataFrame([results])        
     df = df[["model", "dataset_name", "run_hpt", "num_hpt_trials", 
-             "rmse", "mae", "nmae", "r2", 
+             "rmse", "mae", "nmae", "r2", "perc_pred_missing",
              "elapsed_time_in_minutes"]]    
     file_path_and_name = get_file_path_and_name(run_hpt, dataset_name)
     print(df)
     df.to_csv(file_path_and_name, index=False)
-
-
-def save_local_explanations(local_explanations, dataset_name): 
-    if local_explanations is not None: 
-        fname = f"{model_name}_{dataset_name}_local_explanations.csv"
-        file_path_and_name = os.path.join(test_results_path, fname)
-        local_explanations.to_csv(file_path_and_name, index=False)
-
-
 
 def get_file_path_and_name(run_hpt, dataset_name): 
     if dataset_name is None: 
@@ -204,40 +182,37 @@ def run_train_and_test(dataset_name, run_hpt, num_hpt_trials):
     if run_hpt: run_HPT(num_hpt_trials)               # run HPT and save tuned hyperparameters
     train_and_save_algo()        # train the model and save
     
-    set_id_and_target_cols(dataset_name=dataset_name)
-    results, local_explanations = load_and_test_algo()        # load the trained model and get predictions on test data
+    results = load_and_test_algo()        # load the trained model and get predictions on test data
     
     end = time.time()
     elapsed_time_in_minutes = np.round((end - start)/60.0, 2)
     
-    results = { **results, 
+    results = { **results,  
                "model": model_name, 
                "dataset_name": dataset_name, 
                "run_hpt": run_hpt, 
                "num_hpt_trials": num_hpt_trials if run_hpt else None, 
                "elapsed_time_in_minutes": elapsed_time_in_minutes 
                }
-    
-    return results, local_explanations
+    return results
 
 
 if __name__ == "__main__":
     
     num_hpt_trials = 30
     run_hpt_list = [False, True]
-    run_hpt_list = [False]
+    # run_hpt_list = [False]
     
     datasets = ["abalone", "auto_prices", "computer_activity", "heart_disease", "white_wine", "ailerons"]
-    datasets = ["heart_disease"]
+    # datasets = ["heart_disease"]
     
     for run_hpt in run_hpt_list:
-        all_results = []; local_explanations= []
+        all_results = []
         for dataset_name in datasets:        
             print("-"*60)
             print(f"Running dataset {dataset_name}")
-            results, local_explanations = run_train_and_test(dataset_name, run_hpt, num_hpt_trials)
-            save_test_outputs(results, run_hpt, dataset_name) 
-            save_local_explanations(local_explanations, dataset_name)              
+            results = run_train_and_test(dataset_name, run_hpt, num_hpt_trials)
+            save_test_outputs(results, run_hpt, dataset_name)            
             all_results.append(results)
             print("-"*60)
         

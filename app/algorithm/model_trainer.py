@@ -12,7 +12,7 @@ import algorithm.preprocessing.preprocess_utils as pp_utils
 import algorithm.utils as utils
 
 #import algorithm.scoring as scoring
-from algorithm.model.regressor import Regressor
+from algorithm.model.regressor import Regressor, get_data_based_model_params
 from algorithm.utils import get_model_config
 
 
@@ -42,11 +42,11 @@ def get_trained_model(data, data_schema, hyper_params):
     return preprocess_pipe, model
 
 
-def train_model(train_X, train_y, hyper_params):    
+def train_model(train_X, train_y, hyper_params):      
     # get model hyper-paameters parameters 
-    #data_based_params = get_data_based_model_params(train_X)
+    data_based_params = get_data_based_model_params(train_X)
     #model_params = { **data_based_params, **hyper_params }
-    model_params = { **hyper_params }
+    model_params = { **hyper_params, **data_based_params }
     
     # Create and train model   
     model = Regressor(  **model_params )  

@@ -1,33 +1,21 @@
 [
   {
     "name": "n_estimators",
-    "short_desc": "Number of trees in the forest",   
-    "default": 100,
+    "short_desc": "Number of trees in the forest",
+    "default": 250,
     "type": "real",
-    "range_low": 100,
-    "range_high": 1000,
-    "search_type": "log-uniform",
-    "run_HPO": true
-  },
-
-  {
-    "name":"max_features", 
-    "short_desc":"Features to be considered when looking for best split",
-    "default": 1,
-    "type": "real",
-    "range_low": 1,
-    "range_high": 10,
+    "range_low": 50,
+    "range_high": 700,
     "search_type": "uniform",
     "run_HPO": true
   },
-
   {
-    "name":"max_samples", 
-    "short_desc":"Percentage of the training set to make the bootstrap sample to train each decision tree",
+    "name": "max_samples",
+    "short_desc": "Percentage of the training set to make the bootstrap sample to train each decision tree",
     "default": 0.5,
     "type": "real",
     "range_low": 0.01,
-    "range_high": 1,
+    "range_high": 1.0,
     "search_type": "uniform",
     "run_HPO": true
   }
