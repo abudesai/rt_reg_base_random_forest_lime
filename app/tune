@@ -28,7 +28,7 @@ training_path = os.path.join(data_path, channel_name, "regressionBaseMainInput")
 
 
 
-def tune(num_trials=10):    
+def tune(num_trials=30):    
     try:        
         print('Starting the hyperparameter tuning.')  
         # Read data
