@@ -27,4 +27,4 @@ Preprocessing includes missing data imputation, standardization, one-hot encodin
 
 HPT based on Bayesian optimization is included for tuning Random Forest hyper-parameters.
 
-The main programming language is Python. Other tools include Scikit-Learn for main algorithm, LIME for model explainability, feature-engine for preprocessing, Scikit-Optimize for HPT, Flask + Nginx + gunicorn for web service. The web service provides three endpoints- /ping for health check, /infer for predictions in real time and /explain to generate local explanations.
+The main programming language is Python. Other tools include Scikit-Learn for main algorithm, interpret package for model explainability, feature-engine for preprocessing, Scikit-Optimize for HPT, Flask + Nginx + gunicorn for web service. The web service provides three endpoints- /ping for health check, /infer for predictions in real time and /explain to generate local explanations.
