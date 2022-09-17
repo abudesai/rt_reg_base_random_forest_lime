@@ -23,8 +23,29 @@ It can be categorized as a black box model since it is complex and not straightf
 
 Model explainability is provided using LIME. Local explanations are provided here. Explanations at each instance can be understood using LIME. These explanations can be viewed by means of various plots.
 
-Preprocessing includes missing data imputation, standardization, one-hot encoding etc. For numerical variables, missing values are imputed with the mean and a binary column is added to represent 'missing' flag for missing values. For categorical variable missing values are handled using two ways: when missing values are frequent, impute them with 'missing' label and when missing values are rare, impute them with the most frequent.
+The data preprocessing step includes:
+
+- for categorical variables
+  - Handle missing values in categorical:
+    - When missing values are frequent, then impute with 'missing' label
+    - When missing values are rare, then impute with most frequent
+- Group rare labels to reduce number of categories
+- One hot encode categorical variables
+
+- for numerical variables
+
+  - Add binary column to represent 'missing' flag for missing values
+  - Impute missing values with mean of non-missing
+  - MinMax scale variables prior to yeo-johnson transformation
+  - Use Yeo-Johnson transformation to get (close to) gaussian dist.
+  - Standard scale data after yeo-johnson
+
+- for target variable
+  - Use Yeo-Johnson transformation to get (close to) gaussian dist.
+  - Standard scale target data after yeo-johnson
 
 HPT based on Bayesian optimization is included for tuning Random Forest hyper-parameters.
+
+During the model development process, the algorithm was trained and evaluated on a variety of datasets such as abalone, auto_prices, computer_activity, heart_disease, white_wine, and ailerons.
 
 The main programming language is Python. Other tools include Scikit-Learn for main algorithm, interpret package for model explainability, feature-engine for preprocessing, Scikit-Optimize for HPT, Flask + Nginx + gunicorn for web service. The web service provides three endpoints- /ping for health check, /infer for predictions in real time and /explain to generate local explanations.

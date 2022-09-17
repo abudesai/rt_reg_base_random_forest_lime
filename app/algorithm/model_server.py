@@ -19,7 +19,7 @@ class ModelServer:
         self.data_schema = data_schema
         self.id_field_name = self.data_schema["inputDatasets"]["regressionBaseMainInput"]["idField"]  
         self.has_local_explanations = True
-        self.MAX_LOCAL_EXPLANATIONS = 8
+        self.MAX_LOCAL_EXPLANATIONS = 3
         
     
     def _get_preprocessor(self): 
