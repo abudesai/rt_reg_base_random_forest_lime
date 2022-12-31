@@ -1,6 +1,7 @@
 Random Forest using Scikit-Learn and LIME for Regression
 
 - random forest
+- regression
 - lime
 - black box
 - bagging
