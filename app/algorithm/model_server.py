@@ -51,6 +51,8 @@ class ModelServer:
         pred_X = proc_data["X"].astype(np.float)
         # make predictions
         preds = model.predict(pred_X)
+        # inverse transform the predictions to original scale
+        preds = pipeline.get_inverse_transform_on_preds(preprocessor, model_cfg, preds)
         # return the prediction df with the id and prediction fields
         preds_df = data[[self.id_field_name]].copy()
         preds_df["prediction"] = np.round(preds, 4)
@@ -59,6 +61,9 @@ class ModelServer:
     def _get_preds_array(self, X):
         model = self._get_model()
         preds = model.predict(X)
+        preprocessor = self._get_preprocessor()
+        preds = pipeline.get_inverse_transform_on_preds(preprocessor, model_cfg, preds)
+        preds = np.squeeze(preds, axis=(1))
         return preds
 
     def explain_local(self, data):
